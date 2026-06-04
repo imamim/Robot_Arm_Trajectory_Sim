@@ -11,7 +11,7 @@ function results = simulateRobot(params, controller_func, options)
 
     % 1. Extract simulation options (with defaults for safety)
     if isfield(options, 'tspan'), tspan = options.tspan; else, tspan = [0 5]; end
-    if isfield(options, 'x0'), x0 = options.x0; else, x0 = [0; 0; 0; 0]; end
+    if isfield(options, 'x0'), x0 = options.x0; else, x0 = zeros(6,1); end
     if isfield(options, 'solverTol'), tol = options.solverTol; else, tol = 1e-5; end
 
     % 2. Setup ODE Solver Options

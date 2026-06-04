@@ -16,5 +16,14 @@ function p = get_robot_params()
     % Dynamics: Link Point Masses (kg)
     p.m = [0.5; 
            0.2]; 
+
+    params = get_robot_params();
+
+    % --- NEW: Controller Parameters ---
+   p.Kp = 100 * eye(2);    % Proportional Gain
+   p.Kd = 20 * eye(2);     % Derivative Gain
+   p.Ki = 50 * eye(2);     % Integral Gain
+   p.int_limit = 10;       % Anti-windup limit
+
            
 end
