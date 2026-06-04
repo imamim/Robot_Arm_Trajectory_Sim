@@ -48,14 +48,11 @@ function animate_robot(results, p)
     ee_x_history = zeros(num_frames, 1);
     ee_y_history = zeros(num_frames, 1);
 
-    % 4. Pre-compute Forward Kinematics for all frames (Vectorized)
-    % Coordinates of Joint 2 (Elbow)
-    x1 = L1 * cos(theta1);
-    y1 = L1 * sin(theta1);
-    
-    % Coordinates of End-Effector (Wrist/Mass 2)
-    x2 = x1 + L2 * cos(theta1 + theta2);
-    y2 = y1 + L2 * sin(theta1 + theta2);
+    % 4. Load Pre-computed Forward Kinematics
+    x1 = results.x1;
+    y1 = results.y1;
+    x2 = results.x2;
+    y2 = results.y2;
 
     % 5. Animation Playback Loop
     disp('Playing animation...');

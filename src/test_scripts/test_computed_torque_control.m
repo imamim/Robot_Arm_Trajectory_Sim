@@ -29,6 +29,7 @@ q_ddot_ref = zeros(N, 2);
 q_ddot_act = zeros(N, 2);
 
 int_term_applied = zeros(N, 2);
+x_dot_ref = zeros(N, 2);
 
 for i = 1:N
     % Extract references
@@ -45,6 +46,10 @@ for i = 1:N
     int_err = res.x(i, 5:6)';
     int_err_sat = max(min(int_err, params.int_limit), -params.int_limit);
     int_term_applied(i, :) = (params.Ki * int_err_sat)';
+    
+    % Calculate Reference Cartesian Velocity
+    J_ref = get_jacobian(q_ref(i, :)', params.L(1), params.L(2));
+    x_dot_ref(i, :) = (J_ref * q_dot_ref(i, :)')';
 end
 
 figure('Name', 'Controller Analysis - Comprehensive Tracking', 'NumberTitle', 'off', 'Position', [100, 100, 1000, 800]);
@@ -144,7 +149,32 @@ legend('Commanded Torque', 'Applied (Saturated) Torque', 'Saturation Limits');
 grid on;
 
 
+% 7. Analysis: Plot Cartesian Velocity Tracking
+figure('Name', 'Controller Analysis - Cartesian Velocity', 'NumberTitle', 'off', 'Position', [200, 200, 800, 600]);
+
+% X-Velocity
+subplot(2,1,1);
+plot(res.t, x_dot_ref(:, 1), 'r--', 'LineWidth', 1.5); hold on;
+plot(res.t, res.x_dot(:, 1), 'b-', 'LineWidth', 1.5);
+title('End-Effector: X-Axis Velocity Tracking');
+ylabel('Velocity [m/s]');
+legend('Reference \dot{x}', 'Actual \dot{x}');
+grid on;
+
+% Y-Velocity
+subplot(2,1,2);
+plot(res.t, x_dot_ref(:, 2), 'r--', 'LineWidth', 1.5); hold on;
+plot(res.t, res.x_dot(:, 2), 'b-', 'LineWidth', 1.5);
+title('End-Effector: Y-Axis Velocity Tracking');
+xlabel('Time [s]');
+ylabel('Velocity [m/s]');
+legend('Reference \dot{y}', 'Actual \dot{y}');
+grid on;
+
+
+
 % 4. Visualization
 % (Remember to only pass the first two columns to the animator)
 animate_robot(res, params);
+
 

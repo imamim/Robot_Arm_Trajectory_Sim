@@ -48,19 +48,41 @@ function results = simulateRobot(params, controller_func, options)
     sim_time = toc;
     fprintf('Simulation completed in %.3f seconds.\n', sim_time);
 
-    % 5. Post-Process: Reconstruct Control Torques
+    % 5. Post-Process: Reconstruct Control Torques & Cartesian States
     % ode45 does not return the internal values of tau. We must re-evaluate 
     % the controller over the resulting state trajectory to log the applied torques.
     N = length(t_out);
     tau_out = zeros(N, 2);
     tau_cmd_out = zeros(N, 2);
+    
+    % Initialize Cartesian outputs
+    x1_out = zeros(N, 1);
+    y1_out = zeros(N, 1);
+    x2_out = zeros(N, 1);
+    y2_out = zeros(N, 1);
+    ee_vel_out = zeros(N, 2);
+    
+    L1 = params.L(1);
+    L2 = params.L(2);
+
     for i = 1:N
-        % Note: x_out is returned as row vectors by ode45, so we transpose it
+        % Reconstruct torques
         traj_state = traj_func(t_out(i));
-        % Capture the saturated torque (1st arg) and commanded torque (3rd arg)
         [tau_tmp, ~, tau_cmd_tmp] = controller_func(t_out(i), x_out(i, :)', traj_state, params);
         tau_out(i, :) = tau_tmp';
         tau_cmd_out(i, :) = tau_cmd_tmp';
+        
+        % Reconstruct Cartesian coordinates and velocities
+        q = x_out(i, 1:2)';
+        q_dot = x_out(i, 3:4)';
+        
+        x1_out(i) = L1 * cos(q(1));
+        y1_out(i) = L1 * sin(q(1));
+        x2_out(i) = x1_out(i) + L2 * cos(q(1) + q(2));
+        y2_out(i) = y1_out(i) + L2 * sin(q(1) + q(2));
+        
+        J = get_jacobian(q, L1, L2);
+        ee_vel_out(i, :) = (J * q_dot)';
     end
 
     % 6. Pack Results
@@ -69,5 +91,13 @@ function results = simulateRobot(params, controller_func, options)
     results.x = x_out;         % [N x 4] matrix
     results.tau = tau_out;     % [N x 2] matrix
     results.tau_cmd = tau_cmd_out; % [N x 2] matrix of unsaturated commands
+    
+    % Assign Cartesian properties
+    results.x1 = x1_out;
+    results.y1 = y1_out;
+    results.x2 = x2_out;
+    results.y2 = y2_out;
+    results.x_dot = ee_vel_out;
+    
     results.params = params;   % Pass params through for the animation module
 end
