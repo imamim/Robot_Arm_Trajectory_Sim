@@ -15,23 +15,20 @@ function [Lambda, mu, p] = get_op_space_dynamics(M, c_vec, g_vec, J, J_dot_dq)
     %   p:        2x1 Operational Space Gravity vector
 
     % 1. Inverse of the Joint Space Inertia Matrix
-    % M is always symmetric and positive definite, standard inv() is safe.
     M_inv = inv(M); 
     
     % 2. Calculate Lambda
-    % Using pseudo-inverse (pinv) for safety near kinematic singularities
+    % Using safe_jacobian_inverse to apply DLS and prevent torque explosion near singularities
     Lambda_inv = J * M_inv * J';
-    Lambda = pinv(Lambda_inv);
+    Lambda = safe_jacobian_inverse(Lambda_inv, 0.1, 0.05);
     
-    % 3. Calculate J^{-T} safely
-    % For a square matrix, pinv(J)' is equivalent to (J^-1)' but won't crash at singularities
-    J_inv_T = pinv(J)';
+    % 3. Calculate Dynamically Consistent Inverse Transpose
+    % This maps joint-space forces to task-space without blowing up like inv(J)' does.
+    J_bar_T = Lambda * J * M_inv; 
     
-    J_bar_T = Lambda * J * M_inv; % Dynamically Consistent Inverse Transpose
-    mu = J_bar_T * c_vec - Lambda * J_dot_dq;
     % 4. Calculate mu vector
-    mu = J_inv_T * c_vec - Lambda * J_dot_dq;
+    mu = J_bar_T * c_vec - Lambda * J_dot_dq;
     
     % 5. Calculate p (gravity) vector
-    p = J_inv_T * g_vec;
+    p = J_bar_T * g_vec;
 end

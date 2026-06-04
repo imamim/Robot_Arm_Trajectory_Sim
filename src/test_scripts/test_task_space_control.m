@@ -6,27 +6,71 @@ tspan = [0 10];
 % Initial Joint State: [theta1; theta2; theta1_dot; theta2_dot; err_int_x; err_int_y]
 x0 = [pi/2; -pi/4; 0; 0; 0; 0]; 
 
-% Define the Cartesian trajectory generator (Circle in X-Y plane)
-center_x = 0.5;
-center_y = 0.5;
-radius = 0.2;
-omega = 1.0; % rad/s
+% =========================================================================
+% --- NEW: Cubic Spline Figure-Eight (∞) Trajectory Generator ---
+% =========================================================================
+center_x = 0.0;
+center_y = 0.8;
+A_x = 0.5; % Amplitude in X (Horizontal width)
+A_y = 0.1; % Amplitude in Y (Vertical height - made smaller for horizontal orientation)
+T_cycle = 2.0; % Time to complete one full figure-eight loop (seconds)
 
+% 1. Generate discrete waypoints representing the Figure-8 (Lissajous curve)
+% We sample points along the desired time span to act as spline knots.
+t_waypoints = linspace(tspan(1), tspan(2), 40); 
+x_waypoints = center_x + A_x * sin(2*pi * t_waypoints / T_cycle);
+y_waypoints = center_y + A_y * sin(4*pi * t_waypoints / T_cycle); % 2x freq for the '8' shape
+
+
+% 2. Generate Base Cubic Splines (Position)
+% MATLAB's 'spline' creates a piecewise polynomial (pp) structure with C2 continuity
+pp_x = spline(t_waypoints, x_waypoints);
+pp_y = spline(t_waypoints, y_waypoints);
+
+% 3. Differentiate Splines for Velocity
+% A cubic polynomial is ax^3 + bx^2 + cx + d. Its derivative is 3ax^2 + 2bx + c.
+% We multiply the first 3 columns of the coefficient matrix by [3, 2, 1].
+pp_x_dot = mkpp(pp_x.breaks, pp_x.coefs(:, 1:3) .* [3, 2, 1]);
+pp_y_dot = mkpp(pp_y.breaks, pp_y.coefs(:, 1:3) .* [3, 2, 1]);
+
+% 4. Differentiate Splines for Acceleration
+% A quadratic polynomial is ax^2 + bx + c. Its derivative is 2ax + b.
+% We multiply the first 2 columns of the coefficient matrix by [2, 1].
+pp_x_ddot = mkpp(pp_x_dot.breaks, pp_x_dot.coefs(:, 1:2) .* [2, 1]);
+pp_y_ddot = mkpp(pp_y_dot.breaks, pp_y_dot.coefs(:, 1:2) .* [2, 1]);
+
+t_interp = linspace(tspan(1), tspan(2), 1000); 
+
+x_sp = ppval(pp_x, t_interp);
+y_sp = ppval(pp_y, t_interp);
+
+figure('Name', 'Figure-8 Cubic Spline', 'NumberTitle', 'off');
+plot(x_sp, y_sp, 'LineWidth', 1.5,'Color','green');
+title('Reference Figure-8');
+xlabel('X Position [m]');
+ylabel('Y Position [m]');
+grid on;
+axis equal;
+
+% 5. Define the Trajectory Function Handle
+% This dynamically evaluates the splines at any given time 't' during the simulation ODE steps.
 trajectory_func = @(t) [
     % Desired Position [x; y]
-    center_x + radius * cos(omega*t);
-    center_y + radius * sin(omega*t);
+    ppval(pp_x, t);
+    ppval(pp_y, t);
     % Desired Velocity [x_dot; y_dot]
-    -radius * omega * sin(omega*t);
-     radius * omega * cos(omega*t);
+    ppval(pp_x_dot, t);
+    ppval(pp_y_dot, t);
     % Desired Acceleration [x_ddot; y_ddot]
-    -radius * omega^2 * cos(omega*t);
-    -radius * omega^2 * sin(omega*t)
+    ppval(pp_x_ddot, t);
+    ppval(pp_y_ddot, t)
 ];
+% =========================================================================
+
+
 
 % 3. Package Options and Run Simulation
 options = get_sim_options(tspan, x0, trajectory_func, 1e-5);
-
 % Use the OSC Master Controller!
 res = simulateRobot(params, @master_controller_OSC, options);
 
