@@ -94,7 +94,7 @@ The motor effort satisfies physical system properties. The required control torq
 </p>
 
 
-*The exact overlay between commanded and applied torques verifies that no control saturation clipping occurs, successfully keeping the feedback linearization stable.*
+*The exact overlay between commanded and applied torques verifies that no control saturation clipping occurs.*
 
 ---
 
