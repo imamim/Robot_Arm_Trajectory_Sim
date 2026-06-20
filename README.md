@@ -8,19 +8,6 @@
 > 💡 **Want to see your favorite robot in action?** Whether you want to implement a new manipulator (e.g., a 6-DoF arm like the Staubli TX90 or a 7-DoF redundant robot), optimize a trajectory generation pipeline, or experiment with alternative nonlinear control laws, your ideas are welcome!
 > ✨ Feel free to branch out, innovate, and **open a Pull Request (PR) whenever you wish!** Let's build a highly modular robotics playground together! 🛠️🤖
 
-
-## 2. Simulation Demonstration
-
-### Animation: Workspace Tracking
-
-The animation below depicts the 2-DoF planar manipulator tracking a time-parameterized figure-eight ($\infty$) reference trajectory in the X-Y task space.
-
-![Alternative Text Here](path/to/your/image_or_animation.gif)
-
-*The kinematic visualization shows smooth joint articulation and precise tracking across the entire loop, ensuring that the end-effector avoids workspace singularities.*
-
----
-
 ## 3. Methodology
 
 ### Kinematics
@@ -78,7 +65,6 @@ $$p_i(t) = a_i(t - t_i)^3 + b_i(t - t_i)^2 + c_i(t - t_i) + d_i$$
 
 This formulation ensures $C^2$ continuity, providing smooth, analytical position ($x_d$), velocity ($\dot{x}_d$), and acceleration ($\ddot{x}_d$) reference profiles across spline boundaries.
 
----
 
 ## 4. Features
 
@@ -86,7 +72,7 @@ This formulation ensures $C^2$ continuity, providing smooth, analytical position
 * **Actuator Constraints:** Actuator upper and lower torque limit applied to virtual servos.
 * **Operational Space Control Architecture:** Implementation of Proportional-Integral-Derivative (PID) state-feedback (NDI) structures with feedforward trajectory acceleration.
 * **Scalable Matrix Formulations:** As long as the system definition method given in the dynamic section is followed, the robot model can be updated, and simulations for different robots can be performed without changing the controller and spline production.
----
+
 
 
 ## 7. Results and Validation
@@ -95,9 +81,18 @@ This formulation ensures $C^2$ continuity, providing smooth, analytical position
 
 The Operational Space Controller eliminates cross-coupling issues, guiding the end-effector with sub-millimeter precision along the continuous cubic spline target. Both $X$ and $Y$ states exhibit zero steady-state error and zero transient overshoot.
 
+<p align="center">
+  <img src="assets/OSC Analysis - Cartesian Tracking.png" alt="Workspace Figure-Eight Position Tracking" width="480" height="720">
+</p>
+
 ### Figure 2: Applied Joint Torques
 
 The motor effort satisfies physical system properties. The required control torque peaks safely at **3.5 Nm** on Joint 1, operating comfortably within the actuator hardware limit bounds of **$\pm10$ Nm**.
+
+<p align="center">
+  <img src="assets/OSC Analysis - Torque Saturation.png" alt="Workspace Figure-Eight Position Tracking" width="480" height="720">
+</p>
+
 
 *The exact overlay between commanded and applied torques verifies that no control saturation clipping occurs, successfully keeping the feedback linearization stable.*
 
